@@ -324,6 +324,10 @@ Changelog
   when the variance threshold is negative.
   :pr:`20207` by :user:`Tomohiro Endo <europeanplaice>`
 
+- |FIX| Fix a bug in :func:`isotonic.isotonic_regression` where the
+  `sample_weight` passed by a user were overwritten during the fit.
+  :pr:`20515` by :user:`Carsten Allefeld <allefeld>`.
+
 :mod:`sklearn.inspection`
 .........................
 
@@ -551,6 +555,9 @@ Changelog
   :class:`preprocessing.SplineTransformer` also supports periodic
   splines via the ``extrapolation`` argument.
   :pr:`19483` by :user:`Malte Londschien <mlondschien>`.
+  :class:`preprocessing.SplineTransformer` supports sample weights for
+  knot position strategy ``"quantile"``.
+  :pr:`20526` by :user:`Malte Londschien <mlondschien>`.
 
 - |Feature| :class:`preprocessing.OrdinalEncoder` supports passing through
   missing values by default. :pr:`19069` by `Thomas Fan`_.
@@ -632,6 +639,12 @@ Changelog
   :class:`dummy.DummyRegressor` for ``quantile=0`` and
   :class:`ensemble.HuberLossFunction` and :class:`ensemble.HuberLossFunction`
   for ``alpha=0``. :pr:`20528` by :user:`Malte Londschien <mlondschien>`.
+
+- |API| :func:`utils._testing.assert_warns` and
+  :func:`utils._testing.assert_warns_message` are deprecated in 1.0 and will
+  be removed in 1.2. Used `pytest.warns` context manager instead. Note that
+  these functions were not documented and part from the public API.
+  :pr:`20521` by :user:`Olivier Grisel <ogrisel>`.
 
 :mod:`sklearn.validation`
 .........................
