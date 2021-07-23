@@ -209,6 +209,13 @@ Changelog
   an adequate transformer.
   :pr:`18898` by :user:`Oras Phongpanagnam <panangam>`.
 
+:mod:`sklearn.covariance`
+.........................
+
+- |Fix| Adds arrays check to :func:`covariance.ledoit_wolf` and
+  :func:`covariance.ledoit_wolf_shrinkage`
+  :pr:`20416` by `Hugo Defois <defoishugo>`.
+
 :mod:`sklearn.datasets`
 .......................
 
@@ -481,6 +488,10 @@ Changelog
   and :func:`metrics.roc_curve`.
   :pr:`18328` by :user:`Albert Villanova del Moral <albertvillanova>` and
   :user:`Alonso Silva Allende <alonsosilvaallende>`.
+
+- |Fix| avoid overflow in :func:`metrics.cluster.adjust_rand_score` with large
+  amount of data.
+  :pr:`20312` by :user:`Divyanshu Deoli <divyanshudeoli>`.
 
 :mod:`sklearn.mixture`
 ......................
