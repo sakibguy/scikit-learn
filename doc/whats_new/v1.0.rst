@@ -188,6 +188,11 @@ Changelog
   mini batches processed. :pr:`17622`
   by :user:`Jérémie du Boisberranger <jeremiedbb>`.
 
+- |Fix| :class:`cluster.AgglomerativeClustering` correctly connects components
+  when connectivity and affinity are both precomputed and the number
+  of connected components is greater than 1. :pr:`20597` by
+  `Thomas Fan`_.
+
 :mod:`sklearn.compose`
 ......................
 
@@ -230,6 +235,13 @@ Changelog
 - |Fix| Shorten data file names in the openml tests to better support
   installing on Windows and its default 260 character limit on file names.
   :pr:`20209` by `Thomas Fan`_.
+
+- |Enhancement| Replace usages of ``__file__`` related to resource file I/O
+  with ``importlib.resources`` to avoid the assumption that these resource
+  files (e.g. ``iris.csv``) already exist on a filesystem, and by extension
+  to enable compatibility with tools such as ``PyOxidizer``.
+  :pr:`20297` by :user:`Jack Liu <jackzyliu>`
+
 
 :mod:`sklearn.decomposition`
 ............................
@@ -336,6 +348,11 @@ Changelog
 - |API| Raises an error in :class:`feature_selection.VarianceThreshold`
   when the variance threshold is negative.
   :pr:`20207` by :user:`Tomohiro Endo <europeanplaice>`
+
+- |Enhancement| :func:`feature_selection.RFE.fit` accepts additional estimator
+  parameters that are passed directly to the estimator's `fit` method.
+  :pr:`20380` by :user:`Iván Pulido <ijpulidos>`, :user:`Felipe Bidu <fbidu>`,
+  :user:`Gil Rutter <g-rutter>`, and :user:`Adrin Jalali <adrinjalali>`.
 
 - |FIX| Fix a bug in :func:`isotonic.isotonic_regression` where the
   `sample_weight` passed by a user were overwritten during the fit.
