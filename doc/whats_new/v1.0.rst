@@ -152,6 +152,9 @@ Changelog
   :class:`calibration.CalibratedClassifierCV` can now properly be used on
   prefitted pipelines. :pr:`19641` by :user:`Alek Lefebvre <AlekLefebvre>`.
 
+- |Feature| :func:`calibration.CalibrationDisplay` added to plot
+  calibration curves. :pr:`17443` by :user:`Lucy Liu <lucyleeow>`.
+
 - |Fix| Fixed an error when using a ::class:`ensemble.VotingClassifier`
   as `base_estimator` in ::class:`calibration.CalibratedClassifierCV`.
   :pr:`20087` by :user:`Clément Fauchereau <clement-f>`.
@@ -585,6 +588,14 @@ Changelog
   :func:`metrics.plot_confusion_matrix` is deprecated in favor of these two
   class methods and will be removed in 1.2.
   :pr:`18543` by `Guillaume Lemaitre`_.
+
+- |API| :class:`metrics.PrecisionRecallDisplay` exposes two class methods
+  :func:`~metrics.PrecisionRecallDisplay.from_estimator` and
+  :func:`~metrics.PrecisionRecallDisplay.from_predictions` allowing to create
+  a precision-recall curve using an estimator or the predictions.
+  :func:`metrics.plot_precision_recall_curve` is deprecated in favor of these
+  two class methods and will be removed in 1.2.
+  :pr:`20552` by `Guillaume Lemaitre`_.
 
 - |API| :class:`metrics.DetCurveDisplay` exposes two class methods
   :func:`~metrics.DetCurveDisplay.from_estimator` and
