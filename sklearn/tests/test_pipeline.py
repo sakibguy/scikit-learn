@@ -165,20 +165,23 @@ class DummyEstimatorParams(BaseEstimator):
         return self
 
 
-def test_pipeline_init():
-    # Test the various init parameters of the pipeline.
+def test_pipeline_invalid_parameters():
+    # Test the various init parameters of the pipeline in fit
+    # method
+    pipeline = Pipeline([(1, 1)])
     with pytest.raises(TypeError):
-        Pipeline()
+        pipeline.fit([[1]], [1])
 
-    # Check that we can't instantiate pipelines with objects without fit
+    # Check that we can't fit pipelines with objects without fit
     # method
     msg = (
         "Last step of Pipeline should implement fit "
         "or be the string 'passthrough'"
         ".*NoFit.*"
     )
+    pipeline = Pipeline([("clf", NoFit())])
     with pytest.raises(TypeError, match=msg):
-        Pipeline([("clf", NoFit())])
+        pipeline.fit([[1]], [1])
 
     # Smoke test with only an estimator
     clf = NoTrans()
@@ -203,11 +206,12 @@ def test_pipeline_init():
     assert pipe.named_steps["anova"] is filter1
     assert pipe.named_steps["svc"] is clf
 
-    # Check that we can't instantiate with non-transformers on the way
+    # Check that we can't fit with non-transformers on the way
     # Note that NoTrans implements fit, but not transform
     msg = "All intermediate steps should be transformers.*\\bNoTrans\\b.*"
+    pipeline = Pipeline([("t", NoTrans()), ("svc", clf)])
     with pytest.raises(TypeError, match=msg):
-        Pipeline([("t", NoTrans()), ("svc", clf)])
+        pipeline.fit([[1]], [1])
 
     # Check that params are set
     pipe.set_params(svc__C=0.1)
@@ -216,7 +220,10 @@ def test_pipeline_init():
     repr(pipe)
 
     # Check that params are not set when naming them wrong
-    msg = "Invalid parameter C for estimator SelectKBest"
+    msg = re.escape(
+        "Invalid parameter 'C' for estimator SelectKBest(). Valid parameters are: ['k',"
+        " 'score_func']."
+    )
     with pytest.raises(ValueError, match=msg):
         pipe.set_params(anova__C=0.1)
 
@@ -316,17 +323,25 @@ def test_pipeline_raise_set_params_error():
 
     # expected error message
     error_msg = re.escape(
-        f"Invalid parameter fake for estimator {pipe}. "
-        "Check the list of available parameters "
-        "with `estimator.get_params().keys()`."
+        "Invalid parameter 'fake' for estimator Pipeline(steps=[('cls',"
+        " LinearRegression())]). Valid parameters are: ['memory', 'steps', 'verbose']."
     )
-
     with pytest.raises(ValueError, match=error_msg):
         pipe.set_params(fake="nope")
 
-    # nested model check
+    # invalid outer parameter name for compound parameter: the expected error message
+    # is the same as above.
     with pytest.raises(ValueError, match=error_msg):
         pipe.set_params(fake__estimator="nope")
+
+    # expected error message for invalid inner parameter
+    error_msg = re.escape(
+        "Invalid parameter 'invalid_param' for estimator LinearRegression(). Valid"
+        " parameters are: ['copy_X', 'fit_intercept', 'n_jobs', 'normalize',"
+        " 'positive']."
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        pipe.set_params(cls__invalid_param="nope")
 
 
 def test_pipeline_methods_pca_svm():
@@ -1004,6 +1019,60 @@ def test_set_feature_union_step_drop(get_names):
     assert not record
 
 
+def test_set_feature_union_passthrough():
+    """Check the behaviour of setting a transformer to `"passthrough"`."""
+    mult2 = Mult(2)
+    mult3 = Mult(3)
+    X = np.asarray([[1]])
+
+    ft = FeatureUnion([("m2", mult2), ("m3", mult3)])
+    assert_array_equal([[2, 3]], ft.fit(X).transform(X))
+    assert_array_equal([[2, 3]], ft.fit_transform(X))
+
+    ft.set_params(m2="passthrough")
+    assert_array_equal([[1, 3]], ft.fit(X).transform(X))
+    assert_array_equal([[1, 3]], ft.fit_transform(X))
+
+    ft.set_params(m3="passthrough")
+    assert_array_equal([[1, 1]], ft.fit(X).transform(X))
+    assert_array_equal([[1, 1]], ft.fit_transform(X))
+
+    # check we can change back
+    ft.set_params(m3=mult3)
+    assert_array_equal([[1, 3]], ft.fit(X).transform(X))
+    assert_array_equal([[1, 3]], ft.fit_transform(X))
+
+    # Check 'passthrough' step at construction time
+    ft = FeatureUnion([("m2", "passthrough"), ("m3", mult3)])
+    assert_array_equal([[1, 3]], ft.fit(X).transform(X))
+    assert_array_equal([[1, 3]], ft.fit_transform(X))
+
+    X = iris.data
+    columns = X.shape[1]
+    pca = PCA(n_components=2, svd_solver="randomized", random_state=0)
+
+    ft = FeatureUnion([("passthrough", "passthrough"), ("pca", pca)])
+    assert_array_equal(X, ft.fit(X).transform(X)[:, :columns])
+    assert_array_equal(X, ft.fit_transform(X)[:, :columns])
+
+    ft.set_params(pca="passthrough")
+    X_ft = ft.fit(X).transform(X)
+    assert_array_equal(X_ft, np.hstack([X, X]))
+    X_ft = ft.fit_transform(X)
+    assert_array_equal(X_ft, np.hstack([X, X]))
+
+    ft.set_params(passthrough=pca)
+    assert_array_equal(X, ft.fit(X).transform(X)[:, -columns:])
+    assert_array_equal(X, ft.fit_transform(X)[:, -columns:])
+
+    ft = FeatureUnion(
+        [("passthrough", "passthrough"), ("pca", pca)],
+        transformer_weights={"passthrough": 2},
+    )
+    assert_array_equal(X * 2, ft.fit(X).transform(X)[:, :columns])
+    assert_array_equal(X * 2, ft.fit_transform(X)[:, :columns])
+
+
 def test_step_name_validation():
     error_message_1 = r"Estimator names must not contain __: got \['a__q'\]"
     error_message_2 = r"Names provided are not unique: \['a', 'a'\]"
@@ -1021,7 +1090,7 @@ def test_step_name_validation():
             # three ways to make invalid:
             # - construction
             with pytest.raises(ValueError, match=message):
-                cls(**{param: bad_steps})
+                cls(**{param: bad_steps}).fit([[1]], [1])
 
             # - setattr
             est = cls(**{param: [("a", Mult(1))]})
@@ -1463,3 +1532,24 @@ def test_pipeline_check_if_fitted():
         check_is_fitted(pipeline)
     pipeline.fit(iris.data, iris.target)
     check_is_fitted(pipeline)
+
+
+def test_pipeline_get_feature_names_out_passes_names_through():
+    """Check that pipeline passes names through.
+
+    Non-regresion test for #21349.
+    """
+    X, y = iris.data, iris.target
+
+    class AddPrefixStandardScalar(StandardScaler):
+        def get_feature_names_out(self, input_features=None):
+            names = super().get_feature_names_out(input_features=input_features)
+            return np.asarray([f"my_prefix_{name}" for name in names], dtype=object)
+
+    pipe = make_pipeline(AddPrefixStandardScalar(), StandardScaler())
+    pipe.fit(X, y)
+
+    input_names = iris.feature_names
+    feature_names_out = pipe.get_feature_names_out(input_names)
+
+    assert_array_equal(feature_names_out, [f"my_prefix_{name}" for name in input_names])

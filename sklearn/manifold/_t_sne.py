@@ -479,9 +479,11 @@ def trustworthiness(X, X_embedded, *, n_neighbors=5, metric="euclidean"):
     metric : str or callable, default='euclidean'
         Which metric to use for computing pairwise distances between samples
         from the original input space. If metric is 'precomputed', X must be a
-        matrix of pairwise distances or squared distances. Otherwise, see the
-        documentation of argument metric in sklearn.pairwise.pairwise_distances
-        for a list of available metrics.
+        matrix of pairwise distances or squared distances. Otherwise, for a list
+        of available metrics, see the documentation of argument metric in
+        `sklearn.pairwise.pairwise_distances` and metrics listed in
+        `sklearn.metrics.pairwise.PAIRWISE_DISTANCE_FUNCTIONS`. Note that the
+        "cosine" metric uses :func:`~sklearn.metrics.pairwise.cosine_distances`.
 
         .. versionadded:: 0.20
 
@@ -619,7 +621,7 @@ class TSNE(BaseEstimator):
         Determines the random number generator. Pass an int for reproducible
         results across multiple function calls. Note that different
         initializations might result in different local minima of the cost
-        function. See :term: `Glossary <random_state>`.
+        function. See :term:`Glossary <random_state>`.
 
     method : str, default='barnes_hut'
         By default the gradient calculation algorithm uses Barnes-Hut
@@ -798,7 +800,7 @@ class TSNE(BaseEstimator):
 
         if isinstance(self._init, str) and self._init == "pca" and issparse(X):
             raise TypeError(
-                "PCA initialization is currently not suported "
+                "PCA initialization is currently not supported "
                 "with the sparse input matrix. Use "
                 'init="random" instead.'
             )

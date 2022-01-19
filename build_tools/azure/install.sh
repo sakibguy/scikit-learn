@@ -16,29 +16,30 @@ make_conda() {
     if [[ "$DISTRIB" == *"mamba"* ]]; then
         mamba create -n $VIRTUALENV --yes $TO_INSTALL
     else
+        conda config --show
         conda create -n $VIRTUALENV --yes $TO_INSTALL
     fi
     source activate $VIRTUALENV
 }
 
 setup_ccache() {
-    echo "Setting up ccache"
+    echo "Setting up ccache with CCACHE_DIR=${CCACHE_DIR}"
     mkdir /tmp/ccache/
     which ccache
-    for name in gcc g++ cc c++ x86_64-linux-gnu-gcc x86_64-linux-gnu-c++; do
+    for name in gcc g++ cc c++ clang clang++ i686-linux-gnu-gcc i686-linux-gnu-c++ x86_64-linux-gnu-gcc x86_64-linux-gnu-c++ x86_64-apple-darwin13.4.0-clang x86_64-apple-darwin13.4.0-clang++; do
       ln -s $(which ccache) "/tmp/ccache/${name}"
     done
     export PATH="/tmp/ccache/:${PATH}"
     ccache -M 256M
 }
 
-# imports get_dep
+# defines the get_dep and show_installed_libraries functions
 source build_tools/shared.sh
 
 if [[ "$DISTRIB" == "conda" || "$DISTRIB" == *"mamba"* ]]; then
 
     if [[ "$CONDA_CHANNEL" != "" ]]; then
-        TO_INSTALL="-c $CONDA_CHANNEL"
+        TO_INSTALL="--override-channels -c $CONDA_CHANNEL"
     else
         TO_INSTALL=""
     fi
@@ -113,9 +114,8 @@ elif [[ "$DISTRIB" == "conda-pip-latest" ]]; then
     python -m pip install --only-binary :all: scikit-image || true
 
     python -m pip install pandas matplotlib pyamg
-    # do not install dependencies for lightgbm since it requires scikit-learn
-    # and install a version less than 3.0.0 until the issue #18316 is solved.
-    python -m pip install "lightgbm<3.0.0" --no-deps
+    # do not install dependencies for lightgbm since it requires scikit-learn.
+    python -m pip install "lightgbm>=3.0.0" --no-deps
 elif [[ "$DISTRIB" == "conda-pip-scipy-dev" ]]; then
     # FIXME: temporary fix to link against system libraries on linux
     export LDFLAGS="$LDFLAGS -Wl,--sysroot=/"
@@ -129,7 +129,7 @@ elif [[ "$DISTRIB" == "conda-pip-scipy-dev" ]]; then
     echo "Installing joblib master"
     pip install https://github.com/joblib/joblib/archive/master.zip
     echo "Installing pillow master"
-    pip install https://github.com/python-pillow/Pillow/archive/master.zip
+    pip install https://github.com/python-pillow/Pillow/archive/main.zip
 fi
 
 python -m pip install $(get_dep threadpoolctl $THREADPOOLCTL_VERSION) \
@@ -164,7 +164,8 @@ except ImportError:
 # workers with 2 cores when building the compiled extensions of scikit-learn.
 export SKLEARN_BUILD_PARALLEL=3
 
-python -m pip list
+show_installed_libraries
+
 if [[ "$DISTRIB" == "conda-pip-latest" ]]; then
     # Check that pip can automatically build scikit-learn with the build
     # dependencies specified in pyproject.toml using an isolated build
